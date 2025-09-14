@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Tic Tac Toe with AI</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background: #f4f4f9;
+    }
+    h1 { margin-top: 20px; }
+    #board {
+      display: grid;
+      grid-template-columns: repeat(3, 100px);
+      grid-template-rows: repeat(3, 100px);
+      gap: 5px;
+      justify-content: center;
+      margin: 20px auto;
+    }
+    .cell {
+      width: 100px;
+      height: 100px;
+      background: white;
+      border: 2px solid #333;
+      font-size: 2em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .cell.taken {
+      cursor: not-allowed;
+    }
+    #status { margin-top: 20px; font-size: 1.2em; }
+    button { margin: 10px; padding: 10px 20px; }
+  </style>
+</head>
+<body>
+
+<h1>Tic Tac Toe</h1>
+<div>
+  <button onclick="startGame(false)">2 Players</button>
+  <button onclick="startGame(true)">Vs AI</button>
+</div>
+<div id="board"></div>
+<div id="status"></div>
+
+<script>
+const SIZE = 9;
+let board;
+let playerNumber;
+let gameOver;
+let vsAI = false;
+let humanFirst = true;
+
+// Initialize board
+function startGame(aiMode) {
+  board = ["1","2","3","4","5","6","7","8","9"];
+  playerNumber = 1;
+  gameOver = false;
+  vsAI = aiMode;
+  humanFirst = true; // by default human starts first
+  renderBoard();
+  document.getElementById("status").innerText = 
+    aiMode ? "Playing vs AI. You are X!" : "2 Player game. Player 1 is X!";
+}
+
+// Render board in UI
+function renderBoard() {
+  const boardDiv = document.getElementById("board");
+  boardDiv.innerHTML = "";
+  board.forEach((cell, i) => {
+    const div = document.createElement("div");
+    div.classList.add("cell");
+    if (cell === "X" || cell === "O") div.classList.add("taken");
+    div.innerText = (cell === "X" || cell === "O") ? cell : "";
+    div.addEventListener("click", () => makeMove(i));
+    boardDiv.appendChild(div);
+  });
+}
+
+// Handle a move
+function makeMove(i) {
+  if (gameOver || board[i] === "X" || board[i] === "O") return;
+
+  let letter = (playerNumber === 1) ? "X" : "O";
+  board[i] = letter;
+  renderBoard();
+
+  let result = checkWin(board);
+  if (result !== -11) {
+    endGame(result);
+    return;
+  }
+
+  playerNumber = (playerNumber === 1) ? 2 : 1;
+
+  if (vsAI && playerNumber === 2) {
+    aiMove();
+  }
+}
+
+// AI Move
+function aiMove() {
+  let bestPos = bestMove(board, 2);
+  board[bestPos] = "O"; // AI is always O
+  renderBoard();
+
+  let result = checkWin(board);
+  if (result !== -11) {
+    endGame(result);
+    return;
+  }
+
+  playerNumber = 1;
+}
+
+// Check win/draw
+function checkWin(b) {
+  const wins = [
+    [0,1,2],[3,4,5],[6,7,8],
+    [0,3,6],[1,4,7],[2,5,8],
+    [0,4,8],[2,4,6]
+  ];
+  for (let [a,b1,c] of wins) {
+    if (b[a] === b[b1] && b[b1] === b[c]) return 1; // someone won
+  }
+  if (b.every(x => x === "X" || x === "O")) return 0; // draw
+  return -11; // game continues
+}
+
+// Minimax
+function minimax(b, depth, isMaximizing) {
+  let result = checkWin(b);
+  if (result !== -11) {
+    if (result === 1) {
+      // If someone won, decide score
+      return isMaximizing ? -10 + depth : 10 - depth;
+    }
+    return 0; // draw
+  }
+
+  if (isMaximizing) {
+    let best = -Infinity;
+    for (let i=0;i<SIZE;i++) {
+      if (b[i] !== "X" && b[i] !== "O") {
+        let temp = b[i];
+        b[i] = "O";
+        best = Math.max(best, minimax(b, depth+1, false));
+        b[i] = temp;
+      }
+    }
+    return best;
+  } else {
+    let best = Infinity;
+    for (let i=0;i<SIZE;i++) {
+      if (b[i] !== "X" && b[i] !== "O") {
+        let temp = b[i];
+        b[i] = "X";
+        best = Math.min(best, minimax(b, depth+1, true));
+        b[i] = temp;
+      }
+    }
+    return best;
+  }
+}
+
+// Find best move
+function bestMove(b, player) {
+  let bestScore = -Infinity;
+  let move = -1;
+  for (let i=0;i<SIZE;i++) {
+    if (b[i] !== "X" && b[i] !== "O") {
+      let temp = b[i];
+      b[i] = "O"; // AI is always O
+      let score = minimax(b, 0, false);
+      b[i] = temp;
+      if (score > bestScore) {
+        bestScore = score;
+        move = i;
+      }
+    }
+  }
+  return move;
+}
+
+// End game
+function endGame(result) {
+  gameOver = true;
+  let msg = "";
+  if (result === 1) {
+    msg = vsAI && playerNumber === 2 ? "AI Wins!" : `Player ${playerNumber} Wins!`;
+  } else if (result === 0) {
+    msg = "It's a Draw!";
+  }
+  document.getElementById("status").innerText = msg;
+}
+</script>
+
+</body>
+</html>
