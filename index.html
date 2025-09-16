@@ -2,49 +2,357 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Tic Tac Toe with AI</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tic Tac Toe - Play & Win</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      background: #f4f4f9;
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
     }
-    h1 { margin-top: 20px; }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      color: white;
+      overflow-x: hidden;
+    }
+
+    .container {
+      max-width: 600px;
+      width: 100%;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .hero-section {
+      margin: 40px 0;
+      animation: fadeInUp 1s ease-out;
+    }
+
+    .game-title {
+      font-size: 3.5rem;
+      font-weight: 700;
+      margin-bottom: 20px;
+      background: linear-gradient(45deg, #ff6b6b, #ffd93d, #6bcf7f, #4ecdc4);
+      background-size: 300% 300%;
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: gradientShift 3s ease-in-out infinite alternate;
+      text-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+
+    .subtitle {
+      font-size: 1.2rem;
+      opacity: 0.9;
+      margin-bottom: 30px;
+      font-weight: 300;
+    }
+
+    .game-modes {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      margin-bottom: 40px;
+      flex-wrap: wrap;
+    }
+
+    .mode-button {
+      padding: 15px 30px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+      min-width: 150px;
+    }
+
+    .mode-button.primary {
+      background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+      color: white;
+      box-shadow: 0 8px 25px rgba(255, 107, 107, 0.4);
+    }
+
+    .mode-button.secondary {
+      background: linear-gradient(45deg, #4ecdc4, #44a08d);
+      color: white;
+      box-shadow: 0 8px 25px rgba(78, 205, 196, 0.4);
+    }
+
+    .mode-button:hover {
+      transform: translateY(-3px) scale(1.05);
+      box-shadow: 0 12px 35px rgba(0,0,0,0.3);
+    }
+
+    .mode-button:active {
+      transform: translateY(-1px) scale(1.02);
+    }
+
+    .game-container {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 20px;
+      padding: 30px;
+      margin: 20px 0;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+      animation: slideInUp 0.6s ease-out;
+    }
+
     #board {
       display: grid;
-      grid-template-columns: repeat(3, 100px);
-      grid-template-rows: repeat(3, 100px);
-      gap: 5px;
-      justify-content: center;
-      margin: 20px auto;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      gap: 15px;
+      max-width: 300px;
+      margin: 30px auto;
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 15px;
+      box-shadow: inset 0 4px 15px rgba(0,0,0,0.1);
     }
+
     .cell {
-      width: 100px;
-      height: 100px;
-      background: white;
-      border: 2px solid #333;
-      font-size: 2em;
+      aspect-ratio: 1;
+      background: linear-gradient(145deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      border-radius: 15px;
+      font-size: 2.5rem;
+      font-weight: 700;
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
     }
+
+    .cell::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      transition: left 0.5s ease;
+    }
+
+    .cell:hover:not(.taken) {
+      transform: scale(1.1);
+      background: linear-gradient(145deg, rgba(255,255,255,0.2), rgba(255,255,255,0.1));
+      border-color: rgba(255, 255, 255, 0.4);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+    }
+
+    .cell:hover:not(.taken)::before {
+      left: 100%;
+    }
+
     .cell.taken {
       cursor: not-allowed;
+      animation: cellFill 0.4s ease-out;
     }
-    #status { margin-top: 20px; font-size: 1.2em; }
-    button { margin: 10px; padding: 10px 20px; }
+
+    .cell.x {
+      color: #ff6b6b;
+      text-shadow: 0 0 20px rgba(255, 107, 107, 0.6);
+    }
+
+    .cell.o {
+      color: #4ecdc4;
+      text-shadow: 0 0 20px rgba(78, 205, 196, 0.6);
+    }
+
+    #status {
+      font-size: 1.3rem;
+      font-weight: 600;
+      margin-top: 20px;
+      padding: 15px 25px;
+      background: linear-gradient(45deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
+      border-radius: 50px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      min-height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(5px);
+    }
+
+    .status-win {
+      background: linear-gradient(45deg, #ff6b6b, #ee5a24) !important;
+      animation: celebrate 2s ease-in-out infinite alternate;
+    }
+
+    .status-draw {
+      background: linear-gradient(45deg, #f39c12, #e67e22) !important;
+    }
+
+    .floating-shapes {
+      position: fixed;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      z-index: -1;
+      top: 0;
+      left: 0;
+    }
+
+    .shape {
+      position: absolute;
+      opacity: 0.1;
+      animation: float 15s infinite linear;
+    }
+
+    .shape:nth-child(1) {
+      left: 10%;
+      animation-delay: 0s;
+      font-size: 60px;
+    }
+
+    .shape:nth-child(2) {
+      left: 20%;
+      animation-delay: 5s;
+      font-size: 80px;
+    }
+
+    .shape:nth-child(3) {
+      left: 70%;
+      animation-delay: 10s;
+      font-size: 40px;
+    }
+
+    .shape:nth-child(4) {
+      left: 80%;
+      animation-delay: 15s;
+      font-size: 70px;
+    }
+
+    .reset-button {
+      margin-top: 20px;
+      padding: 12px 25px;
+      background: linear-gradient(45deg, #a55eea, #8b68f5);
+      border: none;
+      border-radius: 50px;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 1rem;
+    }
+
+    .reset-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(165, 94, 234, 0.4);
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes slideInUp {
+      from {
+        opacity: 0;
+        transform: translateY(50px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      100% { background-position: 100% 50%; }
+    }
+
+    @keyframes cellFill {
+      0% { transform: scale(0.8); opacity: 0; }
+      50% { transform: scale(1.2); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    @keyframes celebrate {
+      0% { transform: scale(1); }
+      100% { transform: scale(1.05); }
+    }
+
+    @keyframes float {
+      0% { transform: translateY(100vh) rotate(0deg); }
+      100% { transform: translateY(-100px) rotate(360deg); }
+    }
+
+    @media (max-width: 480px) {
+      .game-title {
+        font-size: 2.5rem;
+      }
+      
+      .game-modes {
+        flex-direction: column;
+        align-items: center;
+      }
+      
+      .mode-button {
+        width: 200px;
+      }
+      
+      #board {
+        max-width: 250px;
+        gap: 10px;
+      }
+      
+      .cell {
+        font-size: 2rem;
+      }
+    }
   </style>
 </head>
 <body>
 
-<h1>Tic Tac Toe</h1>
-<div>
-  <button onclick="startGame(false)">2 Players</button>
-  <button onclick="startGame(true)">Vs AI</button>
+<div class="floating-shapes">
+  <div class="shape">×</div>
+  <div class="shape">○</div>
+  <div class="shape">×</div>
+  <div class="shape">○</div>
 </div>
-<div id="board"></div>
-<div id="status"></div>
+
+<div class="container">
+  <div class="hero-section">
+    <h1 class="game-title">Tic Tac Toe</h1>
+    <p class="subtitle">Challenge your friends or test your skills against our AI</p>
+    
+    <div class="game-modes">
+      <button class="mode-button secondary" onclick="startGame(false)">
+        👥 2 Players
+      </button>
+      <button class="mode-button primary" onclick="startGame(true)">
+        🤖 VS AI
+      </button>
+    </div>
+  </div>
+
+  <div class="game-container" style="display: none;" id="gameContainer">
+    <div id="board"></div>
+    <div id="status"></div>
+    <button class="reset-button" onclick="resetGame()">🔄 New Game</button>
+  </div>
+</div>
 
 <script>
 const SIZE = 9;
@@ -60,10 +368,18 @@ function startGame(aiMode) {
   playerNumber = 1;
   gameOver = false;
   vsAI = aiMode;
-  humanFirst = true; // by default human starts first
+  humanFirst = true;
+  
+  document.getElementById("gameContainer").style.display = "block";
+  document.getElementById("gameContainer").scrollIntoView({ behavior: 'smooth' });
+  
   renderBoard();
-  document.getElementById("status").innerText = 
-    aiMode ? "Playing vs AI. You are X!" : "2 Player game. Player 1 is X!";
+  updateStatus(aiMode ? "Playing vs AI. You are X!" : "2 Player game. Player 1 (X) starts!");
+}
+
+function resetGame() {
+  document.getElementById("gameContainer").style.display = "none";
+  document.querySelector(".hero-section").scrollIntoView({ behavior: 'smooth' });
 }
 
 // Render board in UI
@@ -73,11 +389,26 @@ function renderBoard() {
   board.forEach((cell, i) => {
     const div = document.createElement("div");
     div.classList.add("cell");
-    if (cell === "X" || cell === "O") div.classList.add("taken");
+    if (cell === "X" || cell === "O") {
+      div.classList.add("taken");
+      div.classList.add(cell.toLowerCase());
+    }
     div.innerText = (cell === "X" || cell === "O") ? cell : "";
     div.addEventListener("click", () => makeMove(i));
     boardDiv.appendChild(div);
   });
+}
+
+function updateStatus(message) {
+  const statusDiv = document.getElementById("status");
+  statusDiv.innerText = message;
+  statusDiv.className = "";
+  
+  if (message.includes("Wins!")) {
+    statusDiv.classList.add("status-win");
+  } else if (message.includes("Draw")) {
+    statusDiv.classList.add("status-draw");
+  }
 }
 
 // Handle a move
@@ -95,9 +426,15 @@ function makeMove(i) {
   }
 
   playerNumber = (playerNumber === 1) ? 2 : 1;
+  
+  if (!vsAI) {
+    updateStatus(`Player ${playerNumber} (${playerNumber === 1 ? 'X' : 'O'}) turn`);
+  } else {
+    updateStatus("AI is thinking...");
+  }
 
   if (vsAI && playerNumber === 2) {
-    aiMove();
+    setTimeout(aiMove, 800); // Add delay for better UX
   }
 }
 
@@ -114,6 +451,7 @@ function aiMove() {
   }
 
   playerNumber = 1;
+  updateStatus("Your turn!");
 }
 
 // Check win/draw
@@ -135,7 +473,6 @@ function minimax(b, depth, isMaximizing) {
   let result = checkWin(b);
   if (result !== -11) {
     if (result === 1) {
-      // If someone won, decide score
       return isMaximizing ? -10 + depth : 10 - depth;
     }
     return 0; // draw
@@ -190,11 +527,15 @@ function endGame(result) {
   gameOver = true;
   let msg = "";
   if (result === 1) {
-    msg = vsAI && playerNumber === 2 ? "AI Wins!" : `Player ${playerNumber} Wins!`;
+    if (vsAI) {
+      msg = playerNumber === 1 ? "🎉 You Win! Amazing!" : "🤖 AI Wins! Better luck next time!";
+    } else {
+      msg = `🎉 Player ${playerNumber} Wins!`;
+    }
   } else if (result === 0) {
-    msg = "It's a Draw!";
+    msg = "🤝 It's a Draw! Great game!";
   }
-  document.getElementById("status").innerText = msg;
+  updateStatus(msg);
 }
 </script>
 
